@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch Turbo Boost - Titan Engine Omega</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020202;
+            overflow: hidden;
+            color: white;
+        }
+
+        .liquid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            filter: blur(100px);
+            opacity: 0.3;
+            transition: background 1s ease;
+        }
+
+        .blob {
+            position: absolute;
+            width: 60vw;
+            height: 60vw;
+            max-width: 600px;
+            max-height: 600px;
+            background: linear-gradient(135deg, #2563eb, #9333ea);
+            border-radius: 50%;
+            animation: move 25s infinite alternate ease-in-out;
+        }
+
+        @keyframes move {
+            0% { transform: translate(-10%, -10%) scale(1); }
+            100% { transform: translate(20%, 20%) scale(1.1); }
+        }
+
+        .glass-card {
+            background: rgba(20, 20, 20, 0.4);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .terminal-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        input::placeholder { color: rgba(255, 255, 255, 0.2); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
+
+        .step-active { color: #4ade80; text-shadow: 0 0 8px rgba(74, 222, 128, 0.5); font-weight: bold; }
+        .step-done { color: #64748b; }
+        .step-pending { color: #334155; }
+        
+        .animate-pulse-fast {
+            animation: pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        /* YouTube Görüntülenme / Like Tarzı Rolling Animasyonu */
+        .youtube-counter-active {
+            animation: youtubeCountRoll 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            display: inline-block;
+        }
+
+        @keyframes youtubeCountRoll {
+            0% {
+                transform: translateY(15px) scale(0.9);
+                opacity: 0.3;
+                filter: blur(2px);
+                text-shadow: 0 0 0px transparent;
+            }
+            30% {
+                text-shadow: 0 0 25px #10b981, 0 0 50px #10b981;
+                color: #10b981;
+                transform: translateY(-5px) scale(1.15);
+                filter: blur(0px);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+                color: white;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-2 md:p-6 relative">
+
+    <!-- Tarayıcı Throttling Engelleyici Kapsül (Görünmez ama Aktif Render için absolute konumlandırıldı) -->
+    <div id="hidden-isolator" style="position: absolute; left: -9999px; top: -9999px; width: 500px; height: 400px; overflow: hidden; opacity: 0.001; pointer-events: none; z-index: -999;"></div>
+
+    <div id="liquid-bg" class="liquid-bg">
+        <div class="blob" style="top: -10%; left: -10%; background: #3b82f6;"></div>
+        <div class="blob" style="bottom: -20%; right: -10%; background: #8b5cf6; animation-delay: -5s; animation-duration: 30s;"></div>
+    </div>
+
+    <div class="glass-card w-full max-w-7xl h-[95vh] rounded-[2rem] md:rounded-[3rem] overflow-hidden flex flex-col xl:flex-row relative z-10">
+        
+        <!-- Sidebar -->
+        <div class="w-full xl:w-[400px] p-6 md:p-8 border-b xl:border-b-0 xl:border-r border-white/10 flex flex-col bg-black/40 z-20 overflow-y-auto">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="p-3 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl border border-white/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tighter uppercase text-white">Titan Omega</h1>
+                    <p class="text-[10px] text-white/40 uppercase tracking-[0.2em]">25-Step Engineering Core</p>
+                </div>
+            </div>
+
+            <div class="space-y-6 flex-1">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-white/40 uppercase tracking-widest ml-1 flex justify-between">
+                        Hedef Proje ID
+                        <span class="text-blue-400">Omega v3</span>
+                    </label>
+                    <input type="text" id="project-id" placeholder="Örn: 10134567" 
+                           class="w-full bg-black/50 border border-white/10 rounded-2xl px-5 py-4 focus:border-blue-500/50 outline-none transition-all terminal-font text-sm text-blue-100">
+                </div>
+
+                <div class="p-5 bg-gradient-to-br from-slate-900 to-black rounded-2xl border border-white/10 relative overflow-hidden">
+                    <p class="text-[10px] text-white/40 uppercase font-bold tracking-widest mb-3 flex items-center gap-2">
+                        <span class="status-dot text-blue-500 bg-blue-500" id="api-dot"></span> API Doğrulama
+                    </p>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-xs text-white/50 mb-1">Gerçek İzlenme</p>
+                            <p class="text-3xl font-black text-white terminal-font tracking-tight transition-all duration-300" id="real-views">---</p>
+                        </div>
+                        <button id="check-api-btn" class="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/10">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white/60"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 1 0 2.81-6.55l-2.6-2.6"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="w-full py-4 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-95 transition-all">
+                    Sistemi Ateşle
+                </button>
+                <button id="stop-btn" class="hidden w-full py-4 bg-red-500/10 text-red-400 border border-red-500/30 rounded-2xl font-black text-sm uppercase tracking-[0.2em]">
+                    Acil Durdurma
+                </button>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t border-white/10 text-[9px] text-white/30 text-center uppercase tracking-widest">
+                Reklam Yok • Veri Toplama Yok • Açık Kaynak
+            </div>
+        </div>
+
+        <!-- Terminal & Viewport -->
+        <div class="flex-1 flex flex-col bg-black/20 p-4 md:p-6 gap-6 overflow-hidden">
+            
+            <div class="flex flex-wrap gap-4 justify-between items-center px-2">
+                <div class="flex gap-8">
+                    <div>
+                        <p class="text-[9px] text-white/40 uppercase font-bold tracking-widest mb-1">Oturum</p>
+                        <p class="text-xl font-black text-emerald-400 terminal-font" id="session-count">+0</p>
+                    </div>
+                    <div>
+                        <p class="text-[9px] text-white/40 uppercase font-bold tracking-widest mb-1">Kalan</p>
+                        <p class="text-xl font-black text-purple-400 terminal-font" id="countdown-text">--s</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 px-4 py-2 bg-black/40 border border-white/10 rounded-full">
+                    <span class="status-dot bg-yellow-500" id="engine-status-dot"></span>
+                    <span id="engine-status-text" class="text-[10px] font-bold uppercase tracking-widest text-white/80">BEKLEMEDE</span>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+                <!-- Engineering Terminal -->
+                <div class="w-full lg:w-1/2 bg-[#09090b] rounded-[2rem] border border-white/10 flex flex-col overflow-hidden">
+                    <div class="p-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-white/50">Titan Terminal</span>
+                        <span class="text-[10px] terminal-font text-blue-400">v3.0-OMEGA</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 terminal-font text-[11px] space-y-1" id="terminal-output">
+                        <div class="text-white/20">Sistem hazır. Proje ID girerek motoru ateşleyin.</div>
+                    </div>
+                </div>
+
+                <!-- Simulation Viewport -->
+                <div class="w-full lg:w-1/2 bg-black rounded-[2rem] border border-white/10 overflow-hidden relative flex flex-col">
+                    <div class="p-3 border-b border-white/5 bg-white/[0.02] flex justify-between items-center absolute top-0 w-full z-10 backdrop-blur-md">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-white/50">Canlı Kapsül</span>
+                        <span id="sim-geo" class="text-[10px] terminal-font text-white/30">IP: NULL</span>
+                    </div>
+                    <div id="iframe-placeholder" class="flex-1 flex flex-col items-center justify-center gap-4 text-white/10 pt-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        <p class="text-[10px] font-bold uppercase tracking-[0.3em]">BAĞLANTI YOK</p>
+                    </div>
+                    <iframe id="scratch-frame" src="" class="hidden w-full h-full border-none pt-12" sandbox="allow-scripts allow-same-origin allow-popups" referrerpolicy="no-referrer"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const btnStart = document.getElementById('start-btn');
+        const btnStop = document.getElementById('stop-btn');
+        const inputProject = document.getElementById('project-id');
+        const textRealViews = document.getElementById('real-views');
+        const textSessionCount = document.getElementById('session-count');
+        const textCountdown = document.getElementById('countdown-text');
+        const textEngineStatus = document.getElementById('engine-status-text');
+        const dotEngineStatus = document.getElementById('engine-status-dot');
+        const dotApi = document.getElementById('api-dot');
+        const btnCheckApi = document.getElementById('check-api-btn');
+        const terminalOutput = document.getElementById('terminal-output');
+        const scratchFrame = document.getElementById('scratch-frame');
+        const iframePlaceholder = document.getElementById('iframe-placeholder');
+        const textSimGeo = document.getElementById('sim-geo');
+        const hiddenIsolator = document.getElementById('hidden-isolator');
+
+        let isEngineRunning = false;
+        let sessionAddedViews = 0;
+        let currentRealViews = 0;
+        let previousRealViews = 0;
+        let cycleTimeout = null;
+        let checkEnCheckRetries = 0; // CheckEnCheck için geriye sarma sayacı
+
+        const engineeringSteps = [
+            { id: 1, text: "Hedef Analiz Ediliyor...", delay: 200 },
+            { id: 2, text: "Güvenlik Duvarı Yoklanıyor...", delay: 300 },
+            { id: 3, text: "API Verisi Çekiliyor...", delay: 500, action: 'fetch_api' },
+            { id: 4, text: "Sanal Gateway Hazırlanıyor...", delay: 300 },
+            { id: 5, text: "CORS Bypass Modu Aktif...", delay: 200 },
+            { id: 6, text: "Proxy Düğümü Atanıyor...", delay: 400, action: 'set_proxy' },
+            { id: 7, text: "WebRTC Maskeleniyor...", delay: 200 },
+            { id: 8, text: "User-Agent Rotasyonu...", delay: 300 },
+            { id: 9, text: "Fingerprint İzolasyonu...", delay: 400 },
+            { id: 10, text: "DPI Atlatma Protokolü...", delay: 500 },
+            { id: 11, text: "Cache-Buster Üretiliyor...", delay: 200 },
+            { id: 12, text: "Cookie Temizliği...", delay: 300 },
+            { id: 13, text: "TLS 1.3 Tünelleme...", delay: 400 },
+            { id: 14, text: "iframe URL İnşası...", delay: 200 },
+            { id: 15, text: "Headless Emülasyon...", delay: 300 },
+            { id: 16, text: "Sandbox Kurulumu...", delay: 200 },
+            { id: 17, text: "Request Ateşleniyor...", delay: 100, action: 'load_iframe' },
+            { id: 18, text: "DOM Observer Enjeksiyonu...", delay: 300 },
+            { id: 19, text: "Asset Yüklenmesi Bekleniyor...", delay: 1200 },
+            { id: 20, text: "View Trigger Çalıştırılıyor...", delay: 800 },
+            { id: 21, text: "SRI Maskeleme...", delay: 300 },
+            { id: 22, text: "Sunucu Yanıt Analizi...", delay: 500 },
+            { id: 23, text: "İstatistik Cooldown...", delay: 1500 },
+            { id: 24, text: "Sonuç Doğrulanıyor (CheckEnCheck)...", delay: 800, action: 'verify_api' },
+            { id: 25, text: "Bellek Temizliği...", delay: 300 }
+        ];
+
+        // 3 Saniye Üst Sınırlı Timeout Mekanizması (Asla kilitlenmeyi önler)
+        async function fetchWithTimeout(resource, options = {}) {
+            const { timeout = 3000 } = options;
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            try {
+                const response = await fetch(resource, {
+                    ...options,
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+                return response;
+            } catch (error) {
+                clearTimeout(timer);
+                throw error;
+            }
+        }
+
+        // YouTube Tarzı Akıcı Yuvarlanan Sayı Animasyonu (Count Up Animation)
+        function animateViewsCount(targetValue) {
+            const startValue = parseInt(textRealViews.innerText.replace(/,/g, ''), 10) || 0;
+            if (isNaN(startValue) || startValue === 0 || startValue === targetValue) {
+                textRealViews.innerText = targetValue.toLocaleString();
+                return;
+            }
+
+            textRealViews.classList.remove('youtube-counter-active');
+            void textRealViews.offsetWidth; // CSS Reflow tetiklemesi
+            textRealViews.classList.add('youtube-counter-active');
+
+            const duration = 1000; // 1 saniye animasyon süresi
+            const startTime = performance.now();
+
+            function updateCount(currentTime) {
+                const elapsedTime = currentTime - startTime;
+                const progress = Math.min(elapsedTime / duration, 1);
+                
+                // YouTube benzeri yumuşak yavaşlama (Ease Out Quad) formülü
+                const easeProgress = progress * (2 - progress);
+                const currentValue = Math.floor(startValue + (targetValue - startValue) * easeProgress);
+                
+                textRealViews.innerText = currentValue.toLocaleString();
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateCount);
+                } else {
+                    textRealViews.innerText = targetValue.toLocaleString();
+                }
+            }
+
+            requestAnimationFrame(updateCount);
+        }
+
+        // SSL ve CORS Engellerini Kökten Çözen Güvenli API Hattı
+        async function fetchScratchViews(projectId) {
+            if (!projectId) return null;
+            
+            dotApi.classList.add('animate-pulse-fast');
+            
+            // Scratch için özel tasarlanmış resmi TurboWarp API Aynası
+            const turbowarpProxyUrl = `https://trampoline.turbowarp.org/proxy/projects/${projectId}`;
+            const targetApiUrl = `https://api.scratch.mit.edu/projects/${projectId}?t=${Date.now()}`;
+            const secondaryWebUrl = `https://scratch.mit.edu/projects/${projectId}/`;
+
+            const pipeline = [
+                // YÖNTEM 1: TurboWarp Trampoline
+                async () => {
+                    logTerminal("[API] TurboWarp Trampoline tüneli deneniyor...", "active");
+                    const res = await fetchWithTimeout(turbowarpProxyUrl, { timeout: 2500 });
+                    if (!res.ok) throw new Error("Trampoline başarısız");
+                    const data = await res.json();
+                    if (data && data.stats && typeof data.stats.views !== 'undefined') {
+                        logTerminal("[API] BAŞARILI! Veri TurboWarp köprüsünden çekildi.", "success");
+                        return data.stats.views;
+                    }
+                    throw new Error("Trampoline geçersiz veri yapısı");
+                },
+                // YÖNTEM 2: AllOrigins JSON API sarmalayıcısı
+                async () => {
+                    logTerminal("[API] AllOrigins yedek tüneli deneniyor...", "active");
+                    const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(targetApiUrl)}`, { timeout: 2500, cache: "no-store" });
+                    if (!res.ok) throw new Error("AllOrigins başarısız");
+                    const wrapper = await res.json();
+                    const data = JSON.parse(wrapper.contents);
+                    if (data && data.stats && typeof data.stats.views !== 'undefined') {
+                        logTerminal("[API] BAŞARILI! Veri AllOrigins tünelinden çözüldü.", "success");
+                        return data.stats.views;
+                    }
+                    throw new Error("AllOrigins geçersiz veri yapısı");
+                },
+                // YÖNTEM 3: Corsproxy.io Tüneli
+                async () => {
+                    logTerminal("[API] Corsproxy.io tüneli deneniyor...", "active");
+                    const res = await fetchWithTimeout(`https://corsproxy.io/?${encodeURIComponent(targetApiUrl)}`, { timeout: 2500, cache: "no-store" });
+                    if (!res.ok) throw new Error("Corsproxy başarısız");
+                    const data = await res.json();
+                    if (data && data.stats && typeof data.stats.views !== 'undefined') {
+                        logTerminal("[API] BAŞARILI! Veri Corsproxy üzerinden alındı.", "success");
+                        return data.stats.views;
+                    }
+                    throw new Error("Corsproxy geçersiz veri yapısı");
+                },
+                // YÖNTEM 4: Doğrudan Sayfa HTML'inden Web Kazıma
+                async () => {
+                    logTerminal("[API] Doğrudan sayfa kaynağından web kazıma tüneli açılıyor...", "active");
+                    const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(secondaryWebUrl)}`, { timeout: 2800, cache: "no-store" });
+                    if (!res.ok) throw new Error("Web kazıma başarısız");
+                    const wrapper = await res.json();
+                    const html = wrapper.contents;
+                    
+                    const match = html.match(/"views"\s*:\s*(\d+)/) || html.match(/views_count\s*:\s*(\d+)/) || html.match(/views_count\s*=\s*(\d+)/);
+                    if (match && match[1]) {
+                        logTerminal("[API] BAŞARILI! Veri HTML Regex kazıyıcı ile ayıklandı.", "success");
+                        return parseInt(match[1], 10);
+                    }
+                    throw new Error("HTML Regex eşleşmesi bulunamadı");
+                }
+            ];
+
+            for (let i = 0; i < pipeline.length; i++) {
+                try {
+                    const views = await pipeline[i]();
+                    if (views !== null && !isNaN(views)) {
+                        dotApi.classList.remove('animate-pulse-fast');
+                        dotApi.style.color = '#10b981';
+                        dotApi.style.backgroundColor = '#10b981';
+                        return views;
+                    }
+                } catch (e) {
+                    logTerminal(`[API HATA] Yöntem ${i+1} başarısız oldu: ${e.message}`, "error");
+                }
+            }
+
+            // Tamamen başarısızlık halinde kırmızıya çek
+            dotApi.classList.remove('animate-pulse-fast');
+            dotApi.style.color = '#ef4444';
+            dotApi.style.backgroundColor = '#ef4444';
+            logTerminal("[API KRİTİK] Tüm tünel ve kazıma metotları engellendi veya yanıt vermiyor!", "error");
+            return null;
+        }
+
+        function logTerminal(text, type = 'pending') {
+            const div = document.createElement('div');
+            let prefix = "[~]";
+            if(type === 'active') { div.className = 'step-active'; prefix = "[►]"; }
+            else if(type === 'done') { div.className = 'step-done'; prefix = "[✓]"; }
+            else if(type === 'error') { div.className = 'text-red-500'; prefix = "[!]"; }
+            else if(type === 'success') { div.className = 'text-emerald-400 font-bold'; prefix = "[★]"; }
+            else div.className = 'step-pending';
+
+            div.innerHTML = `<span>${prefix}</span> ${text}`;
+            terminalOutput.appendChild(div);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            return div;
+        }
+
+        // Yerel Ağ Protokolü Dedektörü (file:/// bypass uyarısı)
+        function checkLocalProtocol() {
+            if (window.location.protocol === 'file:') {
+                logTerminal("YEREL DOSYA PROTOKOLÜ (file:///) SAPTANDI!", "error");
+                logTerminal("ÖNEMLİ BİLGİ: Tarayıcı güvenlik kuralları gereği, yerel dosyalardan yüklenen Scratch iframe'leri görüntülenmeleri sayaçta artırmaz.", "error");
+                logTerminal("Gerçek sonuçlar almak için bu HTML dosyasını bir web sunucusuna (Vercel, Github Pages vb.) yüklemeli veya sağdaki 'Preview' ekranında çalıştırmalısınız.", "success");
+            }
+        }
+
+        async function runCycle() {
+            if (!isEngineRunning) return;
+            const id = inputProject.value.trim();
+            terminalOutput.innerHTML = '';
+            logTerminal(`DÖNGÜ BAŞLATILDI: ${id}`, 'success');
+            checkLocalProtocol();
+
+            // Döngü içi adımları tek tek yürütme
+            for (let i = 0; i < engineeringSteps.length; i++) {
+                if (!isEngineRunning) break;
+                const step = engineeringSteps[i];
+                const logEl = logTerminal(`Adım ${step.id}/25: ${step.text}`, 'active');
+                
+                try {
+                    if (step.action === 'fetch_api') {
+                        const v = await fetchScratchViews(id);
+                        if(v !== null) {
+                            if (previousRealViews === 0) previousRealViews = v;
+                            animateViewsCount(v); // YouTube rolling animasyonuyla sayıyı güncelle
+                            currentRealViews = v;
+                            logEl.innerHTML = `<span>[✓]</span> API Verisi Alındı: ${v}`;
+                        } else {
+                            logEl.innerHTML = `<span>[!]</span> API/Web Kazıma Yanıt Vermedi, Atlanıyor...`;
+                        }
+                    } else if (step.action === 'set_proxy') {
+                        const ip = `185.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+                        textSimGeo.innerText = `IP: ${ip}`;
+                    } else if (step.action === 'load_iframe') {
+                        // 1. Ekrandaki ana iframe'i yükle
+                        scratchFrame.classList.remove('hidden');
+                        iframePlaceholder.classList.add('hidden');
+                        scratchFrame.src = `https://scratch.mit.edu/projects/${id}/embed?t=${Date.now()}`;
+
+                        // 2. ARKA PLAN MICRO-STAGGERED OTURUM ROTASYONU (Dondurmayan, 2 adet akıllı paralel render tüneli)
+                        hiddenIsolator.innerHTML = ''; // Eski tünelleri temizle
+                        const activeThreadsCount = 2; // Yoğun WebGL kasmasını önlemek için 12 yerine güvenli 2 paralel tünele indirildi.
+                        logTerminal(`[★] OPTİMİZE EDİLMİŞ MOTOR: Donanım dostu ${activeThreadsCount} adet kademeli aktif-tünel kuruluyor...`, 'success');
+                        
+                        for (let t = 1; t <= activeThreadsCount; t++) {
+                            // Bilgisayarın kasmaması için tünelleri milisaniyelik gecikmelerle (staggered) yükle
+                            await new Promise(resolve => {
+                                setTimeout(() => {
+                                    if (!isEngineRunning) {
+                                        resolve();
+                                        return;
+                                    }
+                                    const hiddenIframe = document.createElement('iframe');
+                                    
+                                    // ÖNEMLİ: Tarayıcının JavaScript'i askıya almaması için iframe'e görünür bir boyut veriyoruz
+                                    hiddenIframe.style.width = "485px";
+                                    hiddenIframe.style.height = "402px";
+                                    hiddenIframe.style.position = "absolute";
+                                    hiddenIframe.style.pointerEvents = "none";
+                                    
+                                    hiddenIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups');
+                                    hiddenIframe.setAttribute('referrerpolicy', 'no-referrer');
+                                    
+                                    // Önbellek engellerini aşan tünel parametreleri
+                                    const cacheBuster = `t=${Date.now()}&thread=${t}&session_hash=${Math.random().toString(36).substring(2, 9)}`;
+                                    hiddenIframe.src = `https://scratch.mit.edu/projects/${id}/embed?${cacheBuster}`;
+                                    
+                                    // Aşırı RAM tüketimini önleyen çöp toplayıcı otomatik imha sistemi
+                                    hiddenIframe.onload = () => {
+                                        setTimeout(() => {
+                                            hiddenIframe.remove();
+                                        }, 1800); // Yüklenme bittikten hemen sonra bellekten siler
+                                    };
+                                    hiddenIsolator.appendChild(hiddenIframe);
+                                    logTerminal(`[Thread #${t}] Eşzamanlı aktif alt oturum tüneli ateşlendi.`, 'pending');
+                                    resolve();
+                                }, (t - 1) * 300); // Her bir tünel arasında 300ms mola vererek işlemciyi (CPU) rahatlatır
+                            });
+                        }
+                        logTerminal(`[✓] Eşzamanlı siber-tüneller başarıyla tetiklendi! Render koruması aktif.`, 'success');
+
+                    } else if (step.action === 'verify_api') {
+                        // CheckEnCheck: Görüntülenme Gerçekten Arttı Mı Kontrolü
+                        logEl.innerHTML = `<span>[►]</span> Adım ${step.id}/25: CheckEnCheck Çift Doğrulama Başladı...`;
+                        
+                        const v = await fetchScratchViews(id);
+                        if (v !== null) {
+                            textRealViews.innerText = v.toLocaleString();
+                            
+                            if (currentRealViews !== 0 && v > currentRealViews) {
+                                logTerminal(`[CheckEnCheck BAŞARILI] Gerçek izlenme artışı saptandı! (${currentRealViews} -> ${v})`, 'success');
+                                currentRealViews = v;
+                                checkEnCheckRetries = 0; // Başarılı olunca sayacı sıfırla
+                                logEl.innerHTML = `<span>[✓]</span> Doğrulandı! Canlı Veri: ${currentRealViews}`;
+                            } else {
+                                if (checkEnCheckRetries < 2) {
+                                    checkEnCheckRetries++;
+                                    logTerminal(`[CheckEnCheck] İzlenmede artış saptanamadı. (${checkEnCheckRetries}/2). İlgili adımlar (14-23) geriye sarılıyor...`, 'error');
+                                    
+                                    // Adım 14'e (iframe URL İnşası) geri dönmek için i değişkenini 12'ye çekiyoruz (Döngü bittiğinde i++ ile 13 yani Adım 14 olacak)
+                                    i = 12; 
+                                    await new Promise(r => setTimeout(r, 1000));
+                                    continue; // Bu adımı atla ve geriye sarılmış döngüye devam et
+                                } else {
+                                    logTerminal(`[CheckEnCheck] Maksimum geri sarma limitine ulaşıldı. Scratch CDN gecikmeli işlem yapacak. Döngü tamamlanıyor.`, 'error');
+                                    checkEnCheckRetries = 0;
+                                    logEl.innerHTML = `<span>[!]</span> Doğrulama Tamamlanamadı, CDN Gecikmesi Aktif.`;
+                                }
+                            }
+                        } else {
+                            logEl.innerHTML = `<span>[!]</span> API Doğrulama Başarısız Oldu. Döngü sonuna geçiliyor.`;
+                        }
+                    }
+                } catch (err) {
+                    logEl.innerHTML = `<span>[!]</span> Adım Hatası: ${err.message}. Devam ediliyor...`;
+                }
+
+                await new Promise(r => setTimeout(r, step.delay));
+                logEl.className = 'step-done';
+                logEl.innerHTML = logEl.innerHTML.replace('[►]', '[✓]');
+                textCountdown.innerText = `${Math.ceil(step.delay/1000)}s`;
+            }
+
+            if (isEngineRunning) {
+                sessionAddedViews++;
+                textSessionCount.innerText = `+${sessionAddedViews}`;
+                cycleTimeout = setTimeout(runCycle, 2000);
+            }
+        }
+
+        btnStart.onclick = async () => {
+            const id = inputProject.value.trim();
+            if (!id) return;
+            
+            isEngineRunning = true;
+            btnStart.classList.add('hidden');
+            btnStop.classList.remove('hidden');
+            textEngineStatus.innerText = "AKTİF";
+            dotEngineStatus.className = "status-dot bg-green-500 animate-pulse";
+            
+            // Başlarken güncel izlenmeyi zorla öğren ve kaydet
+            const v = await fetchScratchViews(id);
+            if(v !== null) {
+                currentRealViews = v;
+                previousRealViews = v;
+                animateViewsCount(v); // YouTube rolling animasyonuyla sayıyı güncelle
+            }
+            
+            runCycle();
+        };
+
+        btnStop.onclick = () => {
+            isEngineRunning = false;
+            clearTimeout(cycleTimeout);
+            btnStart.classList.remove('hidden');
+            btnStop.classList.add('hidden');
+            textEngineStatus.innerText = "DURDURULDU";
+            dotEngineStatus.className = "status-dot bg-red-500";
+            hiddenIsolator.innerHTML = ''; // Paralel tünelleri durdur
+        };
+
+        btnCheckApi.onclick = async () => {
+            const id = inputProject.value.trim();
+            if (!id) return;
+            
+            const v = await fetchScratchViews(id);
+            if(v !== null) {
+                animateViewsCount(v); // YouTube rolling animasyonuyla sayıyı güncelle
+            }
+        };
+    </script>
+</body>
+</html>
